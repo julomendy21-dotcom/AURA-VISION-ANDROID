@@ -1,0 +1,55 @@
+name: Build AURA VISION Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK 34
+        run: |
+          sdkmanager "platforms;android-34"
+          sdkmanager "build-tools;34.0.0"
+
+      - name: Extract Android project
+        run: |
+          unzip -o efda1cc49_aura-vision-android.zip -d extracted
+          ls -la extracted
+
+      - name: Find Gradle project
+        run: |
+          find extracted -name settings.gradle.kts
+
+      - name: Compile APK
+        run: |
+          chmod +x extracted/aura-capture/gradlew
+          cd extracted/aura-capture
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aura-vision-debug-apk
+          path: extracted/aura-capture/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
